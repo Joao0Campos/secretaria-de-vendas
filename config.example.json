@@ -1,0 +1,8 @@
+{
+  "dominio": "suaempresa",
+  "email": "usuario@exemplo.com.br",
+  "token": "COLOQUE_SEU_TOKEN_AQUI",
+  "gemini_api_key": "COLOQUE_SUA_CHAVE_DO_GEMINI_AQUI",
+  "modelo_ia": "gemini-2.5-flash",
+  "paralelismo_ia": 5
+}

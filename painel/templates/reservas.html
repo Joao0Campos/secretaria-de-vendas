@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% set secao = 'reservas' %}
+{% block titulo %}Reservas{% endblock %}
+
+{# Jinja não aceita **mudar na assinatura: os extras chegam em `kwargs`. #}
+{% macro link() -%}
+/?{{ dict(filtro, dia_da_varredura='', **kwargs)|dictsort|selectattr(1)|list|urlencode }}
+{%- endmacro %}
+
+{% block conteudo %}
+<div class="page-title">
+  <h1>Reservas</h1>
+  <a class="btn" href="/exportar.xlsx?{{ request.query_params }}">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+    Exportar esta lista (Excel)</a>
+</div>
+
+{% if filtro.dia_da_varredura %}
+<div class="seg" role="group" aria-label="Quais análises mostrar">
+  <a href="{{ link(analise='ultima') }}" class="{{ 'on' if filtro.analise == 'ultima' }}">Última varredura ({{ filtro.dia_da_varredura }})</a>
+  <a href="{{ link(analise='anteriores') }}" class="{{ 'on' if filtro.analise == 'anteriores' }}">Análises anteriores</a>
+  <a href="{{ link(analise='todas') }}" class="{{ 'on' if filtro.analise == 'todas' }}">Todas</a>
+</div>
+{% if filtro.analise == 'anteriores' %}<p class="nota" style="margin:0">Reservas que não estavam nos status da varredura do dia {{ filtro.dia_da_varredura }} (saíram do funil). Ficam guardadas porque contam no Impacto.</p>{% endif %}
+{% endif %}
+
+<div class="kpis">
+  <a class="kpi" href="{{ link(status='') }}"><small>Analisadas</small><strong>{{ totais.analisadas }}</strong></a>
+  <a class="kpi red" href="{{ link(status='divergencia') }}"><small>Com divergência</small><strong>{{ totais.com_divergencia }}</strong></a>
+  <a class="kpi yellow" href="{{ link(status='aviso') }}"><small>Só avisos</small><strong>{{ totais.so_aviso }}</strong></a>
+  <a class="kpi green" href="{{ link(status='ok') }}"><small>Sem apontamento</small><strong>{{ totais.ok }}</strong></a>
+  <a class="kpi blue" href="{{ link(tratativa='abertos') }}"><small>Apontamentos em aberto</small><strong>{{ totais.apontamentos_abertos }}</strong><span>esperando tratativa</span></a>
+</div>
+
+<div class="card" data-busca>
+  <div class="card-h"><h3>Reservas novas no CV</h3>
+    <span class="reanalise">
+      <button type="button" class="btn primary" data-buscar>Buscar reservas novas</button>
+      <span class="busca-status" role="status"></span></span></div>
+</div>
+
+{% if no_funil_sem_analise %}
+<details class="card grupo" open data-lembrar="no-funil-sem-analise">
+  <summary class="card-h"><h3>No funil do CV, ainda sem análise ({{ no_funil_sem_analise|length }})</h3>
+    <span class="nota">Segundo a listagem do CV, que pode atrasar: a análise confirma a situação real.</span></summary>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Nº</th><th>Situação (listagem)</th><th>Modalidade</th><th></th></tr></thead>
+      <tbody>
+      {% for s in no_funil_sem_analise %}
+        <tr>
+          <td class="id">{{ s.id }}</td>
+          <td class="muted">{{ s.situacao or '-' }}</td>
+          <td class="muted">{{ s.modalidade or '-' }}</td>
+          <td><span class="reanalise" data-reanalise="{{ s.id }}">
+            <button type="button" class="btn small primary" data-reanalisar>Analisar agora</button>
+            <span class="reanalise-status" role="status"></span></span></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</details>
+{% endif %}
+
+<div class="card">
+  <form class="card-h" method="get" action="/">
+    <div class="filters" style="flex:1">
+      <input class="input grow" type="search" id="q" name="q" value="{{ filtro.q or '' }}" placeholder="Nº da reserva ou nome do cliente" aria-label="Buscar">
+      {% set rotulos = {'modalidade': 'Modalidade', 'empreendimento': 'Empreendimento', 'imobiliaria': 'Imobiliária', 'corretor': 'Corretor', 'situacao': 'Situação no CV'} %}
+      {% set listas = {'modalidade': opcoes.modalidades, 'empreendimento': opcoes.empreendimentos, 'imobiliaria': opcoes.imobiliarias, 'corretor': opcoes.corretores, 'situacao': opcoes.situacoes} %}
+      {% for campo in ['modalidade', 'empreendimento', 'imobiliaria', 'corretor', 'situacao'] %}
+        {% if listas[campo] %}
+        <select class="select" id="f-{{ campo }}" name="{{ campo }}" aria-label="{{ rotulos[campo] }}" data-envia-ao-mudar>
+          <option value="">{{ rotulos[campo] }}: todos</option>
+          {% for v in listas[campo] %}<option value="{{ v }}" {{ 'selected' if filtro[campo] == v }}>{{ v }}</option>{% endfor %}
+        </select>
+        {% endif %}
+      {% endfor %}
+      <input type="hidden" name="status" value="{{ filtro.status or '' }}">
+      <input type="hidden" name="tratativa" value="{{ filtro.tratativa or '' }}">
+      <input type="hidden" name="analise" value="{{ filtro.analise or '' }}">
+      <button class="btn primary" type="submit">Filtrar</button>
+      {% set usados = filtro.q or filtro.status or filtro.modalidade or filtro.empreendimento or filtro.imobiliaria or filtro.corretor or filtro.situacao or filtro.tratativa == 'abertos' %}
+      {% if usados %}<a class="btn" href="/?analise={{ filtro.analise or '' }}">Limpar</a>{% endif %}
+    </div>
+    <div class="seg" role="group" aria-label="Status">
+      {% for v, r in [('', 'Todas'), ('divergencia', 'Divergência'), ('aviso', 'Aviso'), ('ok', 'OK'), ('sem_analise', 'Sem análise')] %}
+        <a href="{{ link(status=v) }}" class="{{ 'on' if (filtro.status or '') == v }}">{{ r }}</a>
+      {% endfor %}
+    </div>
+  </form>
+
+  {% if itens %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Nº</th><th>Titular</th><th>Modalidade</th><th>Empreendimento</th><th class="num">Pessoas</th>
+        <th class="num">Diverg.</th><th class="num">Avisos</th><th class="num">Ausentes</th><th class="num">Em aberto</th>
+        <th>Status</th><th>Analisada em</th>
+      </tr></thead>
+      <tbody>
+      {% for i in itens %}
+        {% set url = '/reserva/' ~ i.tipo ~ '/' ~ i.id %}
+        <tr class="link" data-href="{{ url }}">
+          <td class="id"><a href="{{ url }}">{{ i.id }}</a>
+            {% if i.url_cv %}<a class="cv-link" href="{{ i.url_cv }}" target="_blank" rel="noopener noreferrer" title="Abrir no CV">CV ↗</a>{% endif %}</td>
+          <td>{{ i.titular or '-' }}</td>
+          <td class="muted">{{ i.modalidade or '-' }}</td>
+          <td class="muted">{{ i.empreendimento or '-' }}</td>
+          <td class="num">{{ i.pessoas }}</td>
+          <td class="num {{ 'c-red' if i.divergencias else 'zero' }}">{{ i.divergencias }}</td>
+          <td class="num {{ 'c-yellow' if i.avisos else 'zero' }}">{{ i.avisos }}</td>
+          <td class="num {{ 'c-red' if i.ausentes else 'zero' }}">{{ i.ausentes }}</td>
+          <td class="num {{ 'c-blue' if i.abertos else 'zero' }}">{{ i.abertos }}</td>
+          <td><span class="pill p-{{ i.status }}">{{ {'divergencia': 'Divergência', 'aviso': 'Aviso', 'ok': 'OK', 'sem_analise': 'Sem análise'}[i.status] }}</span>
+            {% if i.saiu_do_funil %}<span class="saiu" title="Segundo a listagem do CV">saiu do funil: agora em {{ i.saiu_do_funil }}</span>{% endif %}
+            {% if i.aguardando_leitura %}<span class="selo-aguardando" data-aguardando="{{ i.aguardando_leitura }}" title="A IA não conseguiu ler: a reserva NÃO foi conferida inteira. A próxima rodada tenta de novo.">{{ i.aguardando_leitura }} documento(s) aguardando leitura</span>{% endif %}</td>
+          <td class="muted">{{ i.analisado_em }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="vazio">Nenhuma reserva com esses filtros. <a href="/">Limpar filtros</a></div>
+  {% endif %}
+</div>
+<p class="nota">Divergência trava a venda. Aviso pede conferência, mas não trava. "Em aberto" conta os apontamentos que ainda não foram tratados.</p>
+{% endblock %}

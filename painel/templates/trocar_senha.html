@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% set secao = 'senha' %}
+{% block titulo %}Trocar minha senha{% endblock %}
+
+{% block conteudo %}
+<div class="page-title">
+  <h1>Trocar minha senha</h1>
+</div>
+{% if obrigatoria %}<div class="alerta-erro" role="alert">A sua senha foi definida por um administrador. Troque-a para continuar.</div>{% endif %}
+{% if erro %}<div class="alerta-erro" role="alert">{{ erro }}</div>{% endif %}
+{% if feito %}<div class="alerta-ok" role="status">Senha trocada. As suas outras sessões foram encerradas.</div>{% endif %}
+
+<div class="card">
+  <form class="card-b form-senha" method="post" action="/trocar-senha">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Senha atual <input class="input" name="atual" type="password" required autocomplete="current-password"></label>
+    <label>Senha nova (mínimo {{ minimo }} caracteres) <input class="input" name="nova" type="password" required minlength="{{ minimo }}" autocomplete="new-password"></label>
+    <label>Repita a senha nova <input class="input" name="confirmacao" type="password" required minlength="{{ minimo }}" autocomplete="new-password"></label>
+    <button class="btn primary" type="submit">Trocar senha</button>
+  </form>
+</div>
+{% endblock %}

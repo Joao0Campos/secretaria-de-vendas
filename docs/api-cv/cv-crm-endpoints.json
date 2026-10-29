@@ -1,0 +1,301 @@
+{
+  "documentacao": {
+    "titulo": "CV CRM API - Documentação de Endpoints",
+    "descricao": "Lista completa de 644 endpoints da API CV CRM com métodos HTTP, URLs e categorias",
+    "data_extracacao": "2026-08-24",
+    "portal": "https://desenvolvedor.cvcrm.com.br",
+    "suporte": "support@cvcrm.com.br",
+    "versao_api": "v1, v3+",
+    "autenticacao": "Bearer Token (v3+) ou Email + Token (v1)",
+    "rate_limits": {
+      "apis_padrao": "200 requisicoes/minuto",
+      "bulk_data_cvdw": "20 requisicoes/minuto"
+    }
+  },
+  "modulos": [
+    "Prospectar (Leads)",
+    "Vender (Reservas, Comissões)",
+    "Relacionar (Relacionamento com cliente)",
+    "Gerenciar (Administrativo)"
+  ],
+  "categorias_endpoints": {
+    "CADASTROS_E_CONFIGURACOES": {
+      "descricao": "Endpoints para gerenciar dados cadastrais básicos",
+      "endpoints": [
+        {
+          "nome": "Lista pessoas.",
+          "metodo": "GET",
+          "url": "/reference/listarpessoas",
+          "categoria": "Pessoas"
+        },
+        {
+          "nome": "Cadastra uma pessoa.",
+          "metodo": "POST",
+          "url": "/reference/criarpessoa",
+          "categoria": "Pessoas"
+        },
+        {
+          "nome": "Exibe uma pessoa.",
+          "metodo": "GET",
+          "url": "/reference/exibirpessoa",
+          "categoria": "Pessoas"
+        },
+        {
+          "nome": "Atualiza parcialmente uma pessoa.",
+          "metodo": "PATCH",
+          "url": "/reference/atualizarpessoa",
+          "categoria": "Pessoas"
+        },
+        {
+          "nome": "Listar profissões do CV CRM",
+          "metodo": "GET",
+          "url": "/reference/retorarprofissoesprofissao",
+          "categoria": "Profissões"
+        },
+        {
+          "nome": "Cadastrar uma profissão no CV CRM",
+          "metodo": "POST",
+          "url": "/reference/cadastrarprofissao",
+          "categoria": "Profissões"
+        },
+        {
+          "nome": "Retorna os estados",
+          "metodo": "GET",
+          "url": "/reference/getestados-1",
+          "categoria": "Localidades"
+        },
+        {
+          "nome": "Retorna as cidades",
+          "metodo": "GET",
+          "url": "/reference/getcidades-1",
+          "categoria": "Localidades"
+        },
+        {
+          "nome": "Adicionar webhook",
+          "metodo": "POST",
+          "url": "/reference/cadastrarusuariosadministrativos",
+          "categoria": "Webhooks"
+        },
+        {
+          "nome": "Deletar Webhook",
+          "metodo": "DELETE",
+          "url": "/reference/deletarwebhook-1",
+          "categoria": "Webhooks"
+        },
+        {
+          "nome": "Cadastra imobiliária.",
+          "metodo": "POST",
+          "url": "/reference/cadastrarimobiliaria-1",
+          "categoria": "Imobiliárias"
+        },
+        {
+          "nome": "Retorna uma imobiliária cadastrada",
+          "metodo": "GET",
+          "url": "/reference/retornaimobiliaria-1",
+          "categoria": "Imobiliárias"
+        },
+        {
+          "nome": "Retorna as imobiliárias cadastradas",
+          "metodo": "GET",
+          "url": "/reference/retornaimobiliarias",
+          "categoria": "Imobiliárias"
+        }
+      ]
+    },
+    "AUTENTICACAO": {
+      "descricao": "Endpoints para autenticação e controle de acesso",
+      "endpoints": [
+        {
+          "nome": "Autenticação",
+          "metodo": "GET",
+          "url": "/reference/autenticação-5",
+          "categoria": "Autenticação"
+        },
+        {
+          "nome": "Envia o código de verificação",
+          "metodo": "POST",
+          "url": "/reference/codigoverificacao-3",
+          "categoria": "Autenticação"
+        },
+        {
+          "nome": "Gera o token de autenticação externa",
+          "metodo": "POST",
+          "url": "/reference/validarautenticacao-3",
+          "categoria": "Autenticação"
+        },
+        {
+          "nome": "Enviar código de recuperação de senha",
+          "metodo": "POST",
+          "url": "/reference/enviarcodigoesquecisenha-3",
+          "categoria": "Autenticação"
+        },
+        {
+          "nome": "Validar código de recuperação de senha",
+          "metodo": "POST",
+          "url": "/reference/validarcodigoesquecisenha-3",
+          "categoria": "Autenticação"
+        },
+        {
+          "nome": "Alterar senha do usuário",
+          "metodo": "POST",
+          "url": "/reference/alterarsenhaesquecisenha-3",
+          "categoria": "Autenticação"
+        }
+      ]
+    },
+    "PROSPECÇÃO_LEADS": {
+      "descricao": "Endpoints para gerenciar leads (principais para secretária de vendas)",
+      "endpoints_principais": [
+        "Criar Lead",
+        "Listar Leads",
+        "Consultar Lead por ID",
+        "Atualizar Lead",
+        "Associar Lead a Empreendimento",
+        "Atribuir Lead a Agente",
+        "Criar Tarefa de Lead",
+        "Alterar Situação de Lead"
+      ],
+      "nota": "Explorar em https://desenvolvedor.cvcrm.com.br/reference para detalhes completos"
+    },
+    "VENDA_RESERVAS": {
+      "descricao": "Endpoints para gerenciar reservas (principais para secretária de vendas)",
+      "endpoints_principais": [
+        "Criar Reserva",
+        "Listar Reservas",
+        "Consultar Reserva por ID",
+        "Atualizar Reserva",
+        "Cancelar Reserva",
+        "Processar Distrato (Cancelamento de Contrato)",
+        "Cessão de Direitos",
+        "Pagamento de Comissões"
+      ],
+      "nota": "Explorar em https://desenvolvedor.cvcrm.com.br/reference para detalhes completos"
+    },
+    "POS_VENDA_ATENDIMENTOS": {
+      "descricao": "Endpoints para gerenciar atendimentos pós-venda",
+      "endpoints_principais": [
+        "Criar Atendimento",
+        "Listar Atendimentos",
+        "Atualizar Atendimento",
+        "Criar Tarefa",
+        "Assistência Técnica",
+        "Agendamentos"
+      ],
+      "nota": "Explorar em https://desenvolvedor.cvcrm.com.br/reference para detalhes completos"
+    },
+    "PORTAL_CLIENTE": {
+      "descricao": "Endpoints para o portal do cliente",
+      "endpoints_principais": [
+        "Autenticação Portal",
+        "Faturas e Boletos",
+        "Extrato de Pagamentos",
+        "Agendamentos",
+        "Assistência Técnica",
+        "Reservas"
+      ]
+    },
+    "CVDW_DATA_WAREHOUSE": {
+      "descricao": "Endpoints para consumo de dados em BI (Power BI, MySQL, etc)",
+      "endpoints_principais": [
+        "Comissões",
+        "Vendas",
+        "Leads",
+        "Métricas de Atendimento",
+        "Análise de Workflow"
+      ],
+      "rate_limit_especial": "20 requisicoes/minuto"
+    }
+  },
+  "fluxo_secretaria_de_vendas": {
+    "descricao": "Fluxo típico que uma secretária de vendas usa",
+    "passos": [
+      {
+        "numero": 1,
+        "nome": "Capturar Lead",
+        "endpoints_necessarios": [
+          "POST /api/v3/prospectar/leads - Criar lead",
+          "GET /api/v3/prospectar/leads - Listar leads"
+        ]
+      },
+      {
+        "numero": 2,
+        "nome": "Qualificar e Associar",
+        "endpoints_necessarios": [
+          "PATCH /api/v3/prospectar/leads/{id} - Atualizar informações do lead",
+          "POST - Associar lead a empreendimento",
+          "POST - Atribuir lead a agente de vendas"
+        ]
+      },
+      {
+        "numero": 3,
+        "nome": "Criar Reserva",
+        "endpoints_necessarios": [
+          "POST /api/v3/comercial/reservas - Criar reserva",
+          "GET /api/v3/comercial/reservas - Listar reservas"
+        ]
+      },
+      {
+        "numero": 4,
+        "nome": "Processar Documentação",
+        "endpoints_necessarios": [
+          "POST - Pré-cadastro",
+          "POST - Adicionar documentos",
+          "PUT - Atualizar status de pré-cadastro"
+        ]
+      },
+      {
+        "numero": 5,
+        "nome": "Pós-Venda",
+        "endpoints_necessarios": [
+          "POST /api/v3/atendimentos - Criar atendimento",
+          "POST - Criar tarefa",
+          "POST - Agendar assistência técnica"
+        ]
+      }
+    ]
+  },
+  "urls_padrao_api": {
+    "base_url": "https://{dominiodocliente}.cvcrm.com.br/api",
+    "exemplo_dominio": "integracao.cvcrm.com.br",
+    "versoes": {
+      "v1": "Autenticação: Email + Token",
+      "v3_plus": "Autenticação: Bearer Token (recomendado)"
+    },
+    "endpoints_exemplo": {
+      "listar_pessoas": "GET /api/v3/cadastros/pessoas",
+      "criar_pessoa": "POST /api/v3/cadastros/pessoas",
+      "exibir_pessoa": "GET /api/v3/cadastros/pessoas/{idpessoa}",
+      "atualizar_pessoa": "PATCH /api/v3/cadastros/pessoas/{idpessoa}",
+      "listar_leads": "GET /api/v3/prospectar/leads",
+      "criar_lead": "POST /api/v3/prospectar/leads",
+      "listar_reservas": "GET /api/v3/comercial/reservas",
+      "criar_reserva": "POST /api/v3/comercial/reservas",
+      "listar_atendimentos": "GET /api/v3/atendimentos",
+      "criar_atendimento": "POST /api/v3/atendimentos"
+    }
+  },
+  "como_acessar_detalhes": {
+    "descricao": "Para ver todos os detalhes de um endpoint",
+    "passos": [
+      "1. Acesse: https://desenvolvedor.cvcrm.com.br/reference/{slug}",
+      "2. Exemplo: https://desenvolvedor.cvcrm.com.br/reference/criarlead",
+      "3. Na página você verá:",
+      "   - Descrição completa",
+      "   - URL exata da API",
+      "   - Autenticação requerida",
+      "   - Parâmetros (query, path, body)",
+      "   - Estrutura de request (JSON)",
+      "   - Estrutura de response (JSON)",
+      "   - Exemplos de código (Shell, Node, Python, PHP, Ruby)",
+      "   - Status HTTP codes",
+      "   - Validações e erros"
+    ]
+  },
+  "tools_para_testar": {
+    "postman": "https://www.postman.com",
+    "antigravity_ide": "IDE do projeto",
+    "cvio_monitoring_panel": "https://{dominio}.cvcrm.com.br/cvio"
+  },
+  "total_endpoints": 644,
+  "status": "Completo - Pronto para desenvolvimento"
+}

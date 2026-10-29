@@ -1,0 +1,40 @@
+# Ambiente Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Credenciais e configuração local - nunca versionar
+config.json
+.env
+*.pem
+*.key
+*.crt
+*.pfx
+
+# Dados gerados em execução (documentos e dados pessoais de clientes)
+saidas/
+painel_dados/
+backups_pessoa/
+investigacao_renda/
+caddy_dados/
+
+# Arquivos de dados
+*.db
+*.sqlite
+*.sqlite3
+*.xlsx
+*.xls
+*.csv
+*.pdf
+*.docx
+*.mp4
+*.log
+*.jsonl
+
+# Editor / sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

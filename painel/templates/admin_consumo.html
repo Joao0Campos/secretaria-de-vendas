@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% set secao = 'consumo' %}
+{% block titulo %}Consumo da IA{% endblock %}
+
+{% macro mil(n) -%}{{ '{:,}'.format(n or 0).replace(',', '.') }}{%- endmacro %}
+{% macro reais(v) -%}{% if v is none %}desconhecido{% else %}{{ ('R$ %.2f'|format(v))|replace('.', ',') }}{% endif %}{%- endmacro %}
+{% macro dolares(v, casas=2) -%}{% if v is none %}desconhecido{% else %}{{ ('US$ %.' ~ casas ~ 'f')|format(v) }}{% endif %}{%- endmacro %}
+
+{% block conteudo %}
+<div class="page-title">
+  <h1>Consumo da IA</h1>
+</div>
+<p class="nota" style="margin:0">Cada leitura de documento pelo Gemini é registrada com os tokens que ele cobrou (entrada, saída e raciocínio). As leituras que vieram do cache não custam nada e mostram a economia. O custo é uma <b>estimativa</b> pelos preços de cada modelo, abaixo; o raciocínio é cobrado como saída. Modelo sem preço conhecido aparece como "desconhecido", nunca com um preço errado. Só o admin vê esta tela.</p>
+
+{% if sem_dados %}<div class="alerta-erro" role="status">Ainda não há consumo registrado. Ele aparece depois da primeira leitura com a versão nova (no servidor, depois do envio do PC).</div>{% endif %}
+{% set sem_preco = (c.mes_atual.modelos_sem_preco + c.mes_anterior.modelos_sem_preco)|unique|list %}
+{% if sem_preco %}<div class="alerta-erro" role="alert">Modelo sem preço conhecido: {{ sem_preco|join(', ') }}. O custo desses períodos fica "desconhecido"; cadastre o preço com a variável SECRETARIA_PRECO_&lt;MODELO&gt;.</div>{% endif %}
+
+<div class="kpis">
+  <div class="kpi"><small>Hoje</small><strong>{{ reais(c.hoje.brl) }}</strong><span class="muted">{{ dolares(c.hoje.usd, 4) }}</span></div>
+  <div class="kpi"><small>Últimos 7 dias</small><strong>{{ reais(c.sete_dias.brl) }}</strong><span class="muted">{{ dolares(c.sete_dias.usd, 4) }}</span></div>
+  <div class="kpi"><small>Mês atual</small><strong>{{ reais(c.mes_atual.brl) }}</strong><span class="muted">{{ dolares(c.mes_atual.usd, 4) }}</span></div>
+  <div class="kpi"><small>Projeção do mês</small><strong>{{ reais(c.projecao_mes.brl) }}</strong><span class="muted">{{ dolares(c.projecao_mes.usd) }}</span></div>
+</div>
+
+<div class="card">
+  <div class="card-h"><h3>Por período</h3></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Período</th><th class="num">Leituras pela IA</th><th class="num">Do cache</th><th class="num">Com erro</th><th class="num">Tokens de entrada</th><th class="num">Saída</th><th class="num">Raciocínio</th><th class="num">Custo (US$)</th><th class="num">Custo (R$)</th><th class="num">Por documento</th><th class="num">Por reserva</th></tr></thead>
+      <tbody>
+      {% for chave, rotulo in [('hoje', 'Hoje'), ('sete_dias', 'Últimos 7 dias'), ('mes_atual', 'Mês atual'), ('mes_anterior', 'Mês anterior')] %}
+        {% set p = c[chave] %}
+        <tr>
+          <td>{{ rotulo }}</td>
+          <td class="num">{{ mil(p.chamadas) }}</td>
+          <td class="num">{{ mil(p.do_cache) }}</td>
+          <td class="num">{{ mil(p.erros) }}</td>
+          <td class="num">{{ mil(p.entrada) }}</td>
+          <td class="num">{{ mil(p.saida) }}</td>
+          <td class="num">{{ mil(p.raciocinio) }}</td>
+          <td class="num">{{ dolares(p.usd, 4) }}</td>
+          <td class="num">{{ reais(p.brl) }}</td>
+          <td class="num">{% if p.brl_por_documento is not none %}{{ ('R$ %.4f'|format(p.brl_por_documento))|replace('.', ',') }}{% else %}-{% endif %}</td>
+          <td class="num">{% if p.brl_por_reserva is not none %}{{ ('R$ %.3f'|format(p.brl_por_reserva))|replace('.', ',') }}{% else %}-{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-h"><h3>Preços usados</h3></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Modelo</th><th class="num">Entrada (US$ por milhão de tokens)</th><th class="num">Saída e raciocínio</th><th>Data do preço</th><th>De onde</th></tr></thead>
+      <tbody>
+      {% for modelo, preco in c.precos.modelos|dictsort %}
+        <tr><td>{{ modelo }}</td><td class="num">{{ dolares(preco.entrada) }}</td><td class="num">{{ dolares(preco.saida) }}</td><td>{{ preco.data }}</td><td class="muted">{{ preco.origem }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-b">
+    <p class="nota">Cotação: <b>{{ ('R$ %.2f'|format(c.precos.cotacao_usd_brl))|replace('.', ',') }}</b> por US$ (SECRETARIA_COTACAO_USD_BRL). Para mudar o preço de um modelo: SECRETARIA_PRECO_&lt;MODELO&gt; = "entrada/saída/data" (ex.: SECRETARIA_PRECO_GEMINI_2_5_FLASH=0.30/2.50/21/10/2026).</p>
+    <p class="nota">Projeção do mês: o gasto do mês até hoje mais a média diária dos últimos 7 dias ({{ dolares(c.projecao_mes.media_diaria_usd, 4) }} por dia) vezes os {{ c.projecao_mes.dias_restantes }} dia(s) que faltam. Por documento: custo dividido pelas leituras feitas pela IA. Por reserva: custo dividido pelas reservas com pelo menos uma leitura no período.</p>
+  </div>
+</div>
+{% endblock %}

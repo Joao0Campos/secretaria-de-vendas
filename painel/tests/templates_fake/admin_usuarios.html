@@ -1,0 +1,1 @@
+<meta name="csrf" content="{{ csrf }}">ADMIN usuarios={% for u in usuarios %}[{{ u.login }}:{{ u.perfil }}:{{ u.ativo }}:{{ u.trocar_senha }}]{% endfor %} erro={{ erro or "" }} feito={{ feito or "" }} eventos={% for e in eventos %}[{{ e.login }}:{{ e.acao }}:{{ e.por }}]{% endfor %}

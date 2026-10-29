@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% set secao = 'reservas' %}
+{% block titulo %}Reserva {{ r.id }}{% endblock %}
+
+{% set ROTULO_STATUS = {'aberto': 'Em aberto', 'corrigido': 'Corrigido', 'ignorado': 'Ignorado', 'resolvido_na_reanalise': 'Resolvido na reanálise'} %}
+{% set ROTULO_VEREDITO = {'real': 'Problema real', 'falso': 'Aviso errado', 'nao_sei': 'Dúvida'} %}
+{% set PARTES_CONFERIR = [('o_que_e', 'O que é'), ('onde_olhar', 'Onde olhar'), ('como_decidir', 'Como decidir'), ('o_que_fazer', 'O que fazer')] %}
+
+{% macro apontamento(a) -%}
+{% set resolvido = a.status != 'aberto' %}
+<div class="ap {{ a.nivel }} {{ 'resolvido' if resolvido }}" data-chave="{{ a.chave }}" data-status="{{ a.status }}">
+  <div>
+    <div class="cat">{{ 'Divergência' if a.nivel == 'divergencia' else 'Aviso' }} · {{ a.categoria }}</div>
+    <div class="txt">{{ a.texto }}</div>
+    {% set c = como_conferir(a.categoria) %}
+    <details class="como-conferir">
+      <summary>Como conferir este aviso</summary>
+      {% for chave, rotulo in PARTES_CONFERIR %}<p><strong>{{ rotulo }}:</strong> {{ c[chave] }}</p>{% endfor %}
+    </details>
+  </div>
+  <div class="acoes">
+    {% if a.status == 'aberto' %}
+      <button type="button" class="btn small primary" data-acao="analisar">Analisar este apontamento</button>
+    {% elif a.status in ('corrigido', 'ignorado') %}
+      <button type="button" class="btn small" data-acao="aberto">Reabrir</button>
+    {% endif %}
+  </div>
+  <div class="meta">
+    <span class="st st-{{ a.status }}">{{ ROTULO_STATUS[a.status] }}</span>
+    {% if a.veredito %}<span class="vd vd-{{ a.veredito }}">{{ ROTULO_VEREDITO.get(a.veredito, a.veredito) }}</span>{% endif %}
+    {% if a.motivo %}<span>Motivo: {{ a.motivo }}</span>{% endif %}
+    {% if a.detalhe and a.motivo != 'Outro: ' ~ a.detalhe %}<span class="porque">“{{ a.detalhe }}”</span>{% endif %}
+    {% if a.responsavel %}<span>por {{ a.responsavel }}</span>{% endif %}
+    {% if a.atualizado_em %}<span>em {{ a.atualizado_em }}</span>{% endif %}
+    <span class="erro-inline" hidden></span>
+  </div>
+  <form class="veredito" hidden>
+    <fieldset class="passo" data-passo="1">
+      <legend>Passo 1. Este apontamento é um problema real nesta reserva?</legend>
+      <label class="opcao"><input type="radio" name="veredito" value="real"><span><strong>Sim, o problema existe</strong><small>O documento ou o cadastro tem mesmo esse erro.</small></span></label>
+      <label class="opcao"><input type="radio" name="veredito" value="falso"><span><strong>Não, o aviso está errado ou não vale aqui</strong><small>Você conferiu o documento e está certo, ou a regra não faz sentido para este caso.</small></span></label>
+      <label class="opcao"><input type="radio" name="veredito" value="nao_sei"><span><strong>Não tenho certeza</strong><small>Registre a sua dúvida. O apontamento continua em aberto para o João olhar.</small></span></label>
+    </fieldset>
+    <fieldset class="passo" data-passo="2" data-para="real" hidden>
+      <legend>Passo 2. O que foi feito?</legend>
+      <label class="opcao"><input type="radio" name="acao_real" value="corrigido"><span><strong>Corrigi no CV (ou pedi a correção a quem cuida)</strong><small>O apontamento passa a constar como corrigido.</small></span></label>
+      <label class="opcao"><input type="radio" name="acao_real" value="fora_do_cv"><span><strong>Já tinha sido corrigido fora do CV</strong><small>O erro já foi resolvido por outro caminho; fica registrado como “Corrigido fora do CV”.</small></span></label>
+    </fieldset>
+    <fieldset class="passo" data-passo="2" data-para="falso" hidden>
+      <legend>Passo 2. Por que o aviso está errado?</legend>
+      <label class="opcao"><input type="radio" name="acao_falso" value="ia"><span><strong>A IA leu o documento errado</strong><small>Exemplo: leu a data de emissão como validade; trocou um dígito do CPF.</small></span></label>
+      <label class="opcao"><input type="radio" name="acao_falso" value="regra"><span><strong>A regra não vale para este caso</strong><small>Exemplo: a certidão de casamento já está na pasta do cônjuge.</small></span></label>
+      <label class="opcao"><input type="radio" name="acao_falso" value="outro"><span><strong>Outro motivo</strong><small>Explique no próximo passo.</small></span></label>
+    </fieldset>
+    <div class="passo" data-passo="3" hidden>
+      <label class="rotulo-detalhe"><span class="titulo-detalhe">Passo 3. Explique em uma frase <span class="obrig">(opcional)</span></span>
+      <input class="input" name="detalhe" maxlength="500" autocomplete="off" style="width:100%"></label>
+    </div>
+    <p class="efeito" hidden><strong>O que acontece:</strong> <span></span></p>
+    <div class="botoes">
+      <button type="submit" class="btn small primary" disabled>Confirmar</button>
+      <button type="button" class="btn small" data-acao="cancelar">Cancelar</button>
+    </div>
+  </form>
+</div>
+{%- endmacro %}
+
+{% block conteudo %}
+<div class="crumbs"><a href="/">Reservas</a> / {{ r.id }}</div>
+
+<div class="card">
+  <div class="card-h">
+    <div class="resumo">
+      <div><small>Reserva</small><strong style="font-family: var(--mono)">{{ r.id }}</strong></div>
+      <div><small>Modalidade</small><strong>{{ r.modalidade or 'não informada' }}</strong></div>
+      {% if r.empreendimento %}<div><small>Empreendimento</small><strong>{{ r.empreendimento }}</strong></div>{% endif %}
+      {% if r.imobiliaria %}<div><small>Imobiliária</small><strong>{{ r.imobiliaria }}</strong></div>{% endif %}
+      {% if r.situacao %}<div><small>Situação no CV</small><strong>{{ r.situacao }}</strong></div>{% endif %}
+      <div><small>Pessoas</small><strong>{{ r.pessoas|length }}</strong></div>
+      <div><small>Analisada em</small><strong>{{ r.analisado_em }}</strong></div>
+      <span class="pill p-{{ r.status }}">{{ {'divergencia': 'Divergência', 'aviso': 'Aviso', 'ok': 'OK', 'sem_analise': 'Sem análise'}[r.status] }}</span>
+      {% if r.saiu_do_funil %}<span class="saiu" title="Segundo a listagem do CV">saiu do funil: agora em {{ r.saiu_do_funil }}</span>{% endif %}
+      {% if r.aguardando_leitura %}<span class="selo-aguardando" data-aguardando="{{ r.aguardando_leitura }}" title="A IA não conseguiu ler: a reserva NÃO foi conferida inteira. A próxima rodada tenta de novo.">{{ r.aguardando_leitura }} documento(s) aguardando leitura</span>{% endif %}
+    </div>
+    {% if r.url_cv or r.pode_reanalisar %}
+    <div class="btns">
+      {% if r.pode_reanalisar %}
+      <span class="reanalise" data-reanalise="{{ r.id }}">
+        <button type="button" class="btn" data-reanalisar>Reanalisar agora</button>
+        <span class="reanalise-status" role="status"></span></span>
+      {% endif %}
+      {% if r.url_cv %}<a class="btn primary" href="{{ r.url_cv }}" target="_blank" rel="noopener noreferrer">Abrir no CV ↗</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="Pessoas da operação">
+    {% for p in r.pessoas %}
+      <button type="button" role="tab" id="aba-{{ loop.index }}" aria-controls="painel-{{ loop.index }}" aria-selected="{{ 'true' if loop.first else 'false' }}">
+        {{ p.papel }} · {{ (p.nome or '').split(' ')[0] }}
+        {% if p.divergencias %}<span class="pill p-divergencia">{{ p.divergencias }}</span>{% elif p.avisos %}<span class="pill p-aviso">{{ p.avisos }}</span>{% endif %}
+      </button>
+    {% endfor %}
+  </div>
+
+  {% for p in r.pessoas %}
+  <section role="tabpanel" id="painel-{{ loop.index }}" aria-labelledby="aba-{{ loop.index }}" {{ 'hidden' if not loop.first }}>
+    <div class="pessoa-info">
+      <span>Nome <b>{{ p.nome or '-' }}</b></span>
+      <span>CPF/CNPJ <b>{{ p.documento or '-' }}</b></span>
+      <span>Papel <b>{{ p.papel }}</b></span>
+      <span>Analisada em <b>{{ p.analisado_em or '-' }}</b></span>
+    </div>
+
+    {% if p.status == 'sem_analise' %}
+      <div class="bloco"><p class="muted" style="margin:0">Documentos baixados, mas a leitura por IA ainda não rodou para esta pessoa.</p></div>
+    {% endif %}
+
+    {% if p.apontamentos_pasta %}
+    <div class="bloco">
+      <h4>Na pasta</h4>
+      <div class="aps">{% for a in p.apontamentos_pasta %}{{ apontamento(a) }}{% endfor %}</div>
+    </div>
+    {% endif %}
+
+    {% if p.documentos %}
+    <div class="bloco">
+      <h4>Documentos ({{ p.documentos|length }})</h4>
+      <div>
+      {% for d in p.documentos %}
+        <div class="doc">
+          <div class="t">{{ d.tipo_cv or 'Sem campo no CV' }}</div>
+          <div class="ia">{% if d.tipo_ia %}IA leu: {{ d.tipo_ia }}{% endif %}{% if not d.leitura_completa %}<br><small>leitura antiga, regras não reaplicadas</small>{% endif %}</div>
+          <div>
+            {% if d.status == 'aguardando_leitura' %}
+              <span class="selo-aguardando">Aguardando leitura: a IA falhou, a próxima rodada tenta de novo</span>
+            {% elif d.apontamentos %}
+              <div class="aps">{% for a in d.apontamentos %}{{ apontamento(a) }}{% endfor %}</div>
+            {% else %}
+              <span class="semap">Sem apontamento</span>
+            {% endif %}
+          </div>
+          <div>{% if d.url %}<a class="btn small" href="{{ d.url }}" target="_blank" rel="noopener">Abrir arquivo ↗</a>{% else %}<span class="muted">arquivo não está na pasta</span>{% endif %}</div>
+        </div>
+      {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% for aba in p.abas_extras %}
+    <div class="bloco extra">
+      <h4>{{ aba.titulo }}</h4>
+      <div class="table-wrap"><table>
+        {% for linha in aba.linhas %}<tr>{% for c in linha %}<td>{{ c if c is not none else '' }}</td>{% endfor %}</tr>{% endfor %}
+      </table></div>
+    </div>
+    {% endfor %}
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+# Proxy TLS na frente do painel - exemplo mínimo (Caddy 2).
+#
+# O painel continua em 127.0.0.1:8765, e só o Caddy fala com a rede. No serviço
+# do painel (ver servico-painel.cmd):
+#   SECRETARIA_PROXY_CONFIAVEL=127.0.0.1   o IP real do cliente vem do X-Forwarded-For
+#   SECRETARIA_COOKIE_SEGURO=1             cookies Secure + HSTS (o site passa a ser https)
+#   SECRETARIA_HOST fica vazio             (127.0.0.1)
+#
+# Rodar: caddy run --config Caddyfile   (como serviço do Windows: NSSM, ver docs/IMPLANTACAO.md)
+
+# Endereço do servidor. Sem nome na rede, o IP mesmo (o certificado interno sai
+# para o IP). Com nome (ex.: secretaria.empresa.local), troque aqui. Aqui vem da
+# variável de ambiente SERVIDOR_INTERNO (placeholder desta cópia pública).
+{$SERVIDOR_INTERNO} {
+	# Certificado da CA interna do próprio Caddy: instale a raiz dele
+	# (caddy trust) nos PCs da equipe. Com certificado da empresa, troque por:
+	#   tls C:\certificados\secretaria.pem C:\certificados\secretaria-chave.pem
+	tls internal
+
+	# O Caddy já manda X-Forwarded-For, X-Forwarded-Proto e X-Forwarded-Host.
+	reverse_proxy 127.0.0.1:8765
+}

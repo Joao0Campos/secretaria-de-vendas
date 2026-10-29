@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf" content="{{ csrf }}">
+  <title>{% block titulo %}{{ app_nome }}{% endblock %} · {{ app_nome }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/painel.css">
+</head>
+<body>
+{% set secao = secao|default('reservas') %}
+<div class="shell">
+  <header class="topbar">
+    <a class="brand" href="/"><b>SV</b> {{ app_nome }}</a>
+    {% if funil %}
+      <span class="funil {{ 'v-ok' if funil.hoje else 'v-alerta' }}"
+            title="A listagem do CV (CVDW) pode atrasar horas. A reanálise confirma a situação real pela busca direta.">
+        Funil do CV atualizado às {{ funil.hhmm if funil.hoje else funil.quando }} (segundo a listagem do CV)</span>
+    {% endif %}
+    {% if varredura %}
+      {% set ok = varredura.hoje and varredura.resultado in ('ok', 'ok_com_falhas') %}
+      <span class="varredura {{ 'v-ok' if ok and not varredura.falhas else 'v-alerta' }}"
+            title="Varredura diária do CV (7h). Reservas analisadas / reservas nos status da varredura.">
+        {% if varredura.hoje %}Dados de hoje, {{ varredura.quando[-5:] }}{% else %}Última varredura: {{ varredura.quando }}{% endif %}
+        · {{ varredura.reservas }} reservas{% if varredura.falhas %} · {{ varredura.falhas }} falha(s){% endif %}{% if varredura.resultado == 'erro' %} · parou com erro{% endif %}
+      </span>
+    {% else %}
+      <span class="varredura v-alerta" title="Rode varredura_diaria.bat ou espere a das 7h.">Sem varredura diária ainda</span>
+    {% endif %}
+    {% if backup %}
+      <span class="funil {{ 'v-alerta' if backup.alertas else 'v-ok' }}" data-backup
+            title="Backup diário do banco (só o admin vê). {{ backup.alertas|join('; ') if backup.alertas else 'Último resultado: ' ~ (backup.ultimo_resultado.mensagem if backup.ultimo_resultado else '-') }}">
+        {% if backup.alertas %}Backup: {{ backup.alertas|join(' · ') }}{% else %}Backup de {{ backup.idade_horas|round|int }} h atrás{% endif %}
+        · {{ backup.livre_gb if backup.livre_gb is not none else '?' }} GB livres</span>
+    {% endif %}
+    <div class="user">
+      <span>{{ usuario.nome }}{% if usuario.perfil %} · {{ usuario.perfil|capitalize }}{% endif %}</span>
+      <span class="av" aria-hidden="true">{{ (usuario.nome or usuario.login)[:2]|upper }}</span>
+    </div>
+  </header>
+  <nav class="side" aria-label="Menu principal">
+    <a href="/" class="{{ 'on' if secao == 'reservas' }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Reservas</a>
+    {% if mostrar_impacto %}
+    <a href="/impacto" class="{{ 'on' if secao == 'impacto' }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Impacto</a>
+    {% endif %}
+    <a href="/revisao" class="{{ 'on' if secao == 'revisao' }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg>Revisão de regras</a>
+    {% if e_admin %}
+    <a href="/admin/consumo-ia" class="{{ 'on' if secao == 'consumo' }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.4 1.1-2 2.5-2s2.5.6 2.5 2-1.1 1.9-2.5 2.2-2.5.8-2.5 2.3 1.1 2 2.5 2 2.5-.6 2.5-2"/></svg>Consumo da IA</a>
+    <a href="/admin/usuarios" class="{{ 'on' if secao == 'admin' }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21c1-4 4-6 7-6s6 2 7 6M17 11h6M20 8v6"/></svg>Usuários</a>
+    {% endif %}
+    <a href="/trocar-senha" class="{{ 'on' if secao == 'senha' }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/></svg>Trocar minha senha</a>
+    <form method="post" action="/logout">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button type="submit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Sair</button>
+    </form>
+  </nav>
+  <main class="main">
+    {% if ia %}
+    <div class="alerta-erro alerta-ia" role="alert" data-ia-estado>
+      {% if ia.ilegivel %}<b>Estado da IA ilegível, rode ia-liberar.</b> As leituras novas estão bloqueadas até lá (o que já foi lido continua valendo): no PC, <code>python -m painel ia-liberar</code>.
+      {% elif ia.indeterminado %}<b>IA bloqueada desde {{ ia.desde }}: 3 recusas seguidas (429) sem motivo reconhecido.</b> Pode ser limite ou saldo: confira no AI Studio. Documentos novos ficam aguardando leitura; depois de conferir, libere no PC: <code>python -m painel ia-liberar</code>.
+      {% else %}<b>IA sem saldo ou limite atingido desde {{ ia.desde }}.</b> Documentos novos ficam aguardando leitura (o que já foi lido continua valendo). Depois de recarregar o saldo ou subir o limite, libere no PC: <code>python -m painel ia-liberar</code>.{% endif %}
+      {% if ia.desatualizado %}<br><b>Pode estar desatualizado:</b> o último dado do PC é de {{ ia.conferido_em or 'horário desconhecido' }}.{% endif %}
+    </div>
+    {% endif %}
+    {% block conteudo %}{% endblock %}
+  </main>
+</div>
+<script src="/static/painel.js" defer></script>
+</body>
+</html>

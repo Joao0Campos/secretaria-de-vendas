@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% set secao = 'impacto' %}
+{% block titulo %}Impacto{% endblock %}
+
+{% macro pct(v) -%}{{ '%.0f'|format((v or 0) * 100) }}%{%- endmacro %}
+{% macro horas(v) -%}
+  {%- if v is none -%}-{%- elif v < 48 -%}{{ '%.0f'|format(v) }} h{%- else -%}{{ '%.1f'|format(v / 24) }} dias{%- endif -%}
+{%- endmacro %}
+
+{% block conteudo %}
+<div class="page-title">
+  <h1>Impacto da ferramenta</h1>
+  <div class="seg" role="group" aria-label="Período">
+    {% for v, r in [('7', '7 dias'), ('30', '30 dias'), ('90', '90 dias'), ('tudo', 'Tudo')] %}
+      <a href="/impacto?periodo={{ v }}" class="{{ 'on' if periodo|string == v }}">{{ r }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><small>Reservas analisadas</small><strong>{{ m.reservas_analisadas }}</strong><span>{{ m.pessoas }} pessoas · {{ m.documentos_lidos }} documentos</span></div>
+  <div class="kpi red"><small>Apontamentos encontrados</small><strong>{{ m.apontamentos }}</strong><span>{{ m.divergencias }} divergências · {{ m.avisos }} avisos</span></div>
+  <div class="kpi red"><small>Reservas com divergência</small><strong>{{ pct(m.pct_reservas_com_divergencia) }}</strong><span>travariam a venda</span></div>
+  <div class="kpi green"><small>Taxa de resolução</small><strong>{{ pct(m.taxa_resolucao) }}</strong><span>corrigidos + resolvidos na reanálise</span></div>
+  <div class="kpi blue"><small>Tempo até resolver</small><strong>{{ horas(m.horas_ate_resolver.media if m.horas_ate_resolver else none) }}</strong><span>mediana {{ horas(m.horas_ate_resolver.mediana if m.horas_ate_resolver else none) }}</span></div>
+  {% if m.tempo_economizado_horas is not none %}
+  <div class="kpi green"><small>Tempo de conferência poupado</small><strong>{{ '%.0f'|format(m.tempo_economizado_horas) }} h</strong><span>entre {{ '%.0f'|format(m.reservas_analisadas * 30 / 60) }} e {{ '%.0f'|format(m.reservas_analisadas * 50 / 60) }} h, a 30-50 min por reserva</span></div>
+  {% endif %}
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <div class="card-h"><h3>Tratativa dos apontamentos</h3></div>
+    <div class="card-b">
+      {% set tot = (m.por_status.values()|sum) or 1 %}
+      <table>
+        <tbody>
+        {% for chave, rotulo in [('aberto', 'Em aberto'), ('corrigido', 'Corrigido por alguém'), ('resolvido_na_reanalise', 'Resolvido na reanálise'), ('ignorado', 'Ignorado')] %}
+          <tr>
+            <td><span class="st st-{{ chave }}">{{ rotulo }}</span></td>
+            <td class="num" style="width:70px">{{ m.por_status[chave] }}</td>
+            <td style="width:45%"><div class="mini"><span style="width: {{ (m.por_status[chave] / tot * 100)|round(1) }}%"></span></div></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h">
+      <h3>Por semana</h3>
+      <div class="legenda"><span><i style="background: var(--red); opacity:.75"></i>Novos</span><span><i style="background: var(--green)"></i>Resolvidos</span></div>
+    </div>
+    <div class="card-b">
+      {% if m.por_semana %}
+        {% set maior = (m.por_semana|map(attribute='novos')|list + m.por_semana|map(attribute='resolvidos')|list)|max or 1 %}
+        <div class="barras">
+        {% for s in m.por_semana %}
+          <div class="barra">
+            <span class="muted">{{ s.semana }}</span>
+            <div class="trilho">
+              <div class="b novos" style="width: {{ (s.novos / maior * 100)|round(1) }}%"></div>
+              <div class="b resol" style="width: {{ (s.resolvidos / maior * 100)|round(1) }}%"></div>
+            </div>
+            <span class="n">{{ s.novos }} / {{ s.resolvidos }}</span>
+          </div>
+        {% endfor %}
+        </div>
+      {% else %}
+        <p class="muted" style="margin:0">Ainda não há semanas com movimento.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-h">
+    <h3>Por tipo de apontamento</h3>
+    <span class="nota">Falso positivo alto mostra regra que precisa de ajuste.</span>
+  </div>
+  {% if m.por_categoria %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Tipo</th><th class="num">Total</th><th class="num">Diverg.</th><th class="num">Avisos</th><th class="num">Em aberto</th><th class="num">Corrigidos</th><th class="num">Reanálise</th><th class="num">Ignorados</th><th class="num">Falso positivo</th></tr></thead>
+      <tbody>
+      {% for c in m.por_categoria %}
+        <tr>
+          <td>{{ c.categoria }}</td>
+          <td class="num"><b>{{ c.total }}</b></td>
+          <td class="num {{ 'c-red' if c.divergencias else 'zero' }}">{{ c.divergencias }}</td>
+          <td class="num {{ 'c-yellow' if c.avisos else 'zero' }}">{{ c.avisos }}</td>
+          <td class="num {{ 'c-blue' if c.abertos else 'zero' }}">{{ c.abertos }}</td>
+          <td class="num">{{ c.corrigidos }}</td>
+          <td class="num">{{ c.resolvidos_na_reanalise }}</td>
+          <td class="num">{{ c.ignorados }}</td>
+          <td class="num {{ 'c-red' if (c.pct_falso_positivo or 0) >= 0.2 else '' }}">{{ pct(c.pct_falso_positivo) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="vazio">Nenhum apontamento no período.</div>
+  {% endif %}
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <div class="card-h"><h3>Por que foi ignorado</h3></div>
+    <div class="card-b">
+      {% if m.ignorados_por_motivo %}
+      <table><tbody>
+        {% for i in m.ignorados_por_motivo %}<tr><td>{{ i.motivo }}</td><td class="num" style="width:70px">{{ i.n }}</td></tr>{% endfor %}
+      </tbody></table>
+      {% else %}<p class="muted" style="margin:0">Nada ignorado no período.</p>{% endif %}
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h"><h3>Quem tratou</h3></div>
+    <div class="card-b">
+      {% if m.por_usuario %}
+      <table><tbody>
+        {% for u in m.por_usuario %}<tr><td>{{ u.usuario }}</td><td class="num" style="width:70px">{{ u.tratativas }}</td></tr>{% endfor %}
+      </tbody></table>
+      {% else %}<p class="muted" style="margin:0">Ninguém tratou apontamentos no período.</p>{% endif %}
+    </div>
+  </div>
+</div>
+
+<p class="nota">"Resolvido na reanálise" é o apontamento que sumiu quando a reserva foi analisada de novo, por exemplo depois de o corretor trocar o documento. O tempo até resolver conta da primeira vez que o apontamento apareceu até ele ser corrigido ou sumir.</p>
+{% endblock %}

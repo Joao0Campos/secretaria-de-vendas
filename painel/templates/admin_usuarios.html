@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% set secao = 'admin' %}
+{% block titulo %}Usuários{% endblock %}
+
+{% block conteudo %}
+<div class="page-title">
+  <h1>Usuários</h1>
+</div>
+<p class="nota" style="margin:0">Só o perfil admin vê esta tela. A senha definida aqui é provisória: a pessoa troca no primeiro login. Desativar ou redefinir a senha encerra as sessões abertas dela.</p>
+
+{% if erro %}<div class="alerta-erro" role="alert">{{ erro }}</div>{% endif %}
+{% if feito %}<div class="alerta-ok" role="status">{{ feito }}</div>{% endif %}
+
+<div class="card">
+  <div class="card-h"><h3>Novo usuário</h3></div>
+  <form class="card-b filters form-admin" method="post" action="/admin/usuarios">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Login <input class="input" name="login" value="{{ form.login or '' }}" required maxlength="100" autocomplete="off"></label>
+    <label>Nome <input class="input" name="nome" value="{{ form.nome or '' }}" required maxlength="200" autocomplete="off"></label>
+    <label>Perfil
+      <select class="select" name="perfil">
+        {% for p in perfis %}<option value="{{ p }}" {{ 'selected' if (form.perfil or 'registro') == p }}>{{ p }}</option>{% endfor %}
+      </select></label>
+    <label>Senha inicial <input class="input" name="senha" type="password" required minlength="{{ minimo }}" autocomplete="new-password"></label>
+    <button class="btn primary" type="submit">Criar</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-h"><h3>Cadastrados</h3></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Login</th><th>Nome</th><th>Perfil</th><th>Situação</th><th>Último acesso</th><th>Criado</th><th>Última alteração</th><th>Ações</th></tr></thead>
+      <tbody>
+      {% for u in usuarios %}
+        {% set eu = u.login == usuario.login %}
+        <tr>
+          <td class="id">{{ u.login }}{% if eu %} <span class="muted">(você)</span>{% endif %}</td>
+          <td>{{ u.nome }}</td>
+          <td>
+            <form class="acao-linha" method="post" action="/admin/usuarios/{{ u.login|urlencode }}/perfil">
+              <input type="hidden" name="csrf" value="{{ csrf }}">
+              <select class="select" name="perfil" aria-label="Perfil de {{ u.login }}" {{ 'disabled' if eu }}>
+                {% for p in perfis %}<option value="{{ p }}" {{ 'selected' if u.perfil == p }}>{{ p }}</option>{% endfor %}
+              </select>
+              {% if not eu %}<button class="btn small" type="submit">Salvar</button>{% endif %}
+            </form>
+          </td>
+          <td>{% if u.ativo %}<span class="st st-corrigido">Ativo</span>{% else %}<span class="st st-ignorado">Desativado</span>{% endif %}
+            {% if u.trocar_senha %}<div class="muted">troca a senha no próximo login</div>{% endif %}</td>
+          <td class="muted">{{ u.ultimo_acesso or '-' }}</td>
+          <td class="muted">{{ u.criado_em }}{% if u.criado_por %}<br>por {{ u.criado_por }}{% endif %}</td>
+          <td class="muted">{% if u.alterado_em %}{{ u.alterado_em }}<br>por {{ u.alterado_por }}{% else %}-{% endif %}</td>
+          <td>
+            {% if not eu %}
+            <form class="acao-linha" method="post" action="/admin/usuarios/{{ u.login|urlencode }}/ativo">
+              <input type="hidden" name="csrf" value="{{ csrf }}">
+              <input type="hidden" name="ativo" value="{{ '0' if u.ativo else '1' }}">
+              <button class="btn small" type="submit">{{ 'Desativar' if u.ativo else 'Reativar' }}</button>
+            </form>
+            <form class="acao-linha" method="post" action="/admin/usuarios/{{ u.login|urlencode }}/senha">
+              <input type="hidden" name="csrf" value="{{ csrf }}">
+              <input class="input" name="senha" type="password" required minlength="{{ minimo }}" autocomplete="new-password"
+                     placeholder="nova senha provisória" aria-label="Nova senha de {{ u.login }}">
+              <button class="btn small" type="submit">Redefinir senha</button>
+            </form>
+            {% else %}<a class="btn small" href="/trocar-senha">Trocar minha senha</a>{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if eventos %}
+<div class="card">
+  <div class="card-h"><h3>Histórico</h3></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Quando</th><th>Usuário</th><th>O quê</th><th>Por</th></tr></thead>
+      <tbody>
+      {% set ACOES = {'criado': 'criado', 'desativado': 'desativado', 'reativado': 'reativado', 'perfil': 'perfil alterado', 'senha_redefinida': 'senha redefinida pelo admin', 'senha_trocada': 'trocou a própria senha'} %}
+      {% for e in eventos %}
+        <tr><td class="muted">{{ e.em }}</td><td>{{ e.login }}</td><td>{{ ACOES.get(e.acao, e.acao) }}{% if e.detalhe %} ({{ e.detalhe }}){% endif %}</td><td>{{ e.por }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

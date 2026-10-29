@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entrar · {{ app_nome }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/painel.css">
+</head>
+<body>
+<div class="login-page">
+  <form class="login" method="post" action="/login">
+    <span class="brand"><b>SV</b> {{ app_nome }}</span>
+    <h1>Entrar</h1>
+    <p>Conferência de documentos das vendas</p>
+    {% if erro %}<div class="alerta-erro" role="alert">{{ erro }}</div>{% endif %}
+    <label for="login">Login
+      <input class="input" id="login" name="login" autocomplete="username" required autofocus>
+    </label>
+    <label for="senha">Senha
+      <input class="input" id="senha" name="senha" type="password" autocomplete="current-password" required>
+    </label>
+    <input type="hidden" name="next" value="{{ next or '/' }}">
+    <input type="hidden" name="csrf" value="{{ csrf or '' }}">
+    <button class="btn primary" type="submit">Entrar</button>
+  </form>
+</div>
+</body>
+</html>

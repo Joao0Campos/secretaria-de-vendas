@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% set secao = 'revisao' %}
+{% block titulo %}Revisão de regras{% endblock %}
+
+{% block conteudo %}
+<div class="page-title">
+  <h1>Revisão de regras</h1>
+  <a class="btn" href="/revisao.xlsx?motivo={{ filtro.motivo }}&periodo={{ filtro.periodo }}">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+    Exportar para o time (Excel)</a>
+</div>
+
+<p class="nota" style="margin:0">Apontamentos que alguém ignorou, agrupados por tipo. Cada grupo é candidato a correção de regra: o time lê os casos, ajusta o código, mede nas pastas já analisadas e reanalisa. Ignorar aqui nunca muda a regra sozinho.</p>
+
+<div class="card">
+  <div class="card-h">
+    <div class="seg" role="group" aria-label="Motivo">
+      {% for v, r in [('fp_regra', 'Falso positivo + regra não se aplica'), ('fp', 'Falso positivo da IA'), ('regra', 'Regra não se aplica'), ('todos', 'Todos os ignorados')] %}
+        <a href="/revisao?motivo={{ v }}&periodo={{ filtro.periodo }}" class="{{ 'on' if filtro.motivo == v }}">{{ r }}</a>
+      {% endfor %}
+    </div>
+    <div class="seg" role="group" aria-label="Período">
+      {% for v, r in [('7', '7 dias'), ('30', '30 dias'), ('90', '90 dias'), ('tudo', 'Tudo')] %}
+        <a href="/revisao?motivo={{ filtro.motivo }}&periodo={{ v }}" class="{{ 'on' if filtro.periodo|string == v }}">{{ r }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="card-b">
+    <div class="kpis">
+      <div class="kpi"><small>Casos para revisar</small><strong>{{ totais.casos }}</strong></div>
+      <div class="kpi"><small>Tipos de apontamento</small><strong>{{ totais.categorias }}</strong></div>
+      <div class="kpi {{ 'yellow' if totais.sem_detalhe }}"><small>Sem "por quê"</small><strong>{{ totais.sem_detalhe }}</strong><span>difíceis de corrigir sem contexto</span></div>
+    </div>
+  </div>
+</div>
+
+{% if not grupos %}
+  <div class="card"><div class="vazio">Nenhum apontamento ignorado com esse filtro. Quando alguém marcar um falso positivo no detalhe da reserva, ele aparece aqui.</div></div>
+{% endif %}
+
+{% for g in grupos %}
+<details class="card grupo" {{ 'open' if loop.index <= 3 }}>
+  <summary class="card-h">
+    <h3>{{ g.categoria }}</h3>
+    <div class="resumo">
+      <div><small>Casos</small><strong>{{ g.total }}</strong></div>
+      <div><small>Falso positivo no tipo</small><strong class="{{ 'c-red' if (g.pct_falso_positivo or 0) >= 20 }}">{{ '%.0f'|format(g.pct_falso_positivo or 0) }}%</strong></div>
+      <div class="motivos">{% for m in g.por_motivo %}<span class="st st-ignorado">{{ m.motivo }}: {{ m.n }}</span>{% endfor %}</div>
+    </div>
+  </summary>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Reserva</th><th>Pessoa</th><th>Documento</th><th>Apontamento</th><th>Motivo e por quê</th><th>Quem / quando</th><th></th></tr></thead>
+      <tbody>
+      {% for c in g.casos %}
+        <tr>
+          <td class="id"><a href="{{ c.url_reserva }}">{{ c.id }}</a></td>
+          <td>{{ c.papel or '-' }}</td>
+          <td>{{ c.tipo_cv or '-' }}{% if c.tipo_ia %}<br><span class="muted">IA leu: {{ c.tipo_ia }}</span>{% endif %}</td>
+          <td><span class="pill p-{{ c.nivel }}">{{ 'Divergência' if c.nivel == 'divergencia' else 'Aviso' }}</span><div class="txt-caso">{{ c.texto }}</div>
+            {% if not c.presente %}<span class="muted">já não aparece na última análise</span>{% endif %}</td>
+          <td>{{ c.motivo }}{% if c.detalhe %}<div class="porque">“{{ c.detalhe }}”</div>{% else %}<div class="muted">sem por quê</div>{% endif %}</td>
+          <td class="muted">{{ c.responsavel or '-' }}<br>{{ c.atualizado_em or '' }}</td>
+          <td><div class="btns">
+            {% if c.url_arquivo %}<a class="btn small" href="{{ c.url_arquivo }}" target="_blank" rel="noopener">Documento ↗</a>{% endif %}
+            {% if c.url_cv %}<a class="btn small" href="{{ c.url_cv }}" target="_blank" rel="noopener noreferrer">CV ↗</a>{% endif %}
+          </div></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</details>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,10 @@
+requests==2.34.2
+openpyxl==3.1.5
+pymupdf==1.28.2
+rapidfuzz==3.14.5
+google-genai==2.20.0
+fastapi==0.143.0
+uvicorn==0.54.0
+jinja2==3.1.6
+# usado pelo TestClient do FastAPI nos testes (já vem como dependência do google-genai)
+httpx==0.28.1
